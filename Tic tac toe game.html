@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Tic Tac Toe - Skill Craft Internship</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      height: 100vh;
+      overflow: hidden;
+      background: #0f0c29;  /* fallback */
+      background: linear-gradient(to right, #24243e, #302b63, #0f0c29);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    /* Animated particles in background */
+    .particles {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      z-index: 0;
+    }
+
+    .particles span {
+      position: absolute;
+      width: 5px;
+      height: 5px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 50%;
+      animation: move 20s linear infinite;
+    }
+
+    @keyframes move {
+      from {
+        transform: translateY(100vh);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(-10vh);
+        opacity: 1;
+      }
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      padding: 30px;
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(12px);
+      border-radius: 16px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+      text-align: center;
+      color: #fff;
+    }
+
+    h1 {
+      margin-bottom: 20px;
+      font-size: 2em;
+    }
+
+    .mode-buttons {
+      margin-bottom: 15px;
+    }
+
+    button {
+      padding: 10px 20px;
+      margin: 5px;
+      background: #ffffff22;
+      color: white;
+      border: 1px solid #ffffff44;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.3s, transform 0.2s;
+    }
+
+    button:hover {
+      background: #ffffff44;
+      transform: scale(1.05);
+    }
+
+    .board {
+      display: grid;
+      grid-template-columns: repeat(3, 100px);
+      grid-gap: 10px;
+      margin: 20px auto;
+    }
+
+    .cell {
+      width: 100px;
+      height: 100px;
+      font-size: 2.5em;
+      line-height: 100px;
+      background: rgba(255, 255, 255, 0.08);
+      color: #0ff;
+      text-shadow: 0 0 5px #0ff;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background 0.3s, transform 0.2s;
+    }
+
+    .cell:hover {
+      background: rgba(255, 255, 255, 0.2);
+      transform: scale(1.05);
+    }
+
+    .winner {
+      background: #28a745 !important;
+      color: white !important;
+      text-shadow: none;
+    }
+
+    #status {
+      margin: 10px;
+      font-size: 1.2em;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Background particles -->
+  <div class="particles">
+    <!-- Create multiple particle spans -->
+    <script>
+      for (let i = 0; i < 50; i++) {
+        const span = document.createElement('span');
+        span.style.left = `${Math.random() * 100}%`;
+        span.style.animationDuration = `${10 + Math.random() * 10}s`;
+        span.style.animationDelay = `${Math.random() * 20}s`;
+        document.querySelector('.particles').appendChild(span);
+      }
+    </script>
+  </div>
+
+  <!-- Main Game Container -->
+  <div class="container">
+    <h1>Tic Tac Toe</h1>
+    <div class="mode-buttons">
+      <button onclick="setMode('player')">Play vs Player</button>
+      <button onclick="setMode('computer')">Play vs Computer</button>
+    </div>
+    <div class="board" id="board"></div>
+    <div id="status">Choose a mode to start!</div>
+    <button onclick="resetGame()">Reset Game</button>
+  </div>
+
+  <script>
+    const board = document.getElementById("board");
+    const statusText = document.getElementById("status");
+
+    let gameState = ["", "", "", "", "", "", "", "", ""];
+    let currentPlayer = "X";
+    let isGameActive = true;
+    let mode = "";
+
+    const winConditions = [
+      [0,1,2], [3,4,5], [6,7,8],
+      [0,3,6], [1,4,7], [2,5,8],
+      [0,4,8], [2,4,6]
+    ];
+
+    function setMode(selectedMode) {
+      mode = selectedMode;
+      resetGame();
+      statusText.textContent = `Current Player: ${currentPlayer}`;
+    }
+
+    function handleClick(index) {
+      if (!isGameActive || gameState[index] !== "") return;
+
+      gameState[index] = currentPlayer;
+      renderBoard();
+
+      const winnerInfo = checkWinner();
+      if (winnerInfo) {
+        statusText.textContent = `Player ${winnerInfo.winner} wins!`;
+        winnerInfo.combo.forEach(i => document.getElementById(`cell-${i}`).classList.add('winner'));
+        isGameActive = false;
+        return;
+      }
+
+      if (!gameState.includes("")) {
+        statusText.textContent = "It's a Draw!";
+        isGameActive = false;
+        return;
+      }
+
+      currentPlayer = currentPlayer === "X" ? "O" : "X";
+      statusText.textContent = `Current Player: ${currentPlayer}`;
+
+      if (mode === 'computer' && currentPlayer === "O") {
+        setTimeout(computerMove, 400);
+      }
+    }
+
+    function checkWinner() {
+      for (let condition of winConditions) {
+        const [a, b, c] = condition;
+        if (gameState[a] && gameState[a] === gameState[b] && gameState[a] === gameState[c]) {
+          return { winner: gameState[a], combo: condition };
+        }
+      }
+      return null;
+    }
+
+    function computerMove() {
+      let available = gameState.map((v, i) => v === "" ? i : null).filter(i => i !== null);
+      if (available.length > 0) {
+        let move = available[Math.floor(Math.random() * available.length)];
+        handleClick(move);
+      }
+    }
+
+    function renderBoard() {
+      board.innerHTML = "";
+      gameState.forEach((value, i) => {
+        let cell = document.createElement("div");
+        cell.className = "cell";
+        cell.id = `cell-${i}`;
+        cell.textContent = value;
+        cell.addEventListener("click", () => handleClick(i));
+        board.appendChild(cell);
+      });
+    }
+
+    function resetGame() {
+      gameState = ["", "", "", "", "", "", "", "", ""];
+      currentPlayer = "X";
+      isGameActive = true;
+      statusText.textContent = mode ? `Current Player: ${currentPlayer}` : "Choose a mode to start!";
+      renderBoard();
+    }
+
+    renderBoard();
+  </script>
+</body>
+</html>
